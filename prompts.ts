@@ -46,9 +46,6 @@ ${GUARDRAILS_PROMPT}
 ${CITATIONS_PROMPT}
 </citations>
 
-<course_context>
-${CHAT_CONTEXT_PROMPT}
-</course_context>
 
 <date_time>
 ${DATE_AND_TIME}
