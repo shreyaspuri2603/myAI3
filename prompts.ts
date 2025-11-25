@@ -47,7 +47,7 @@ ${CITATIONS_PROMPT}
 </citations>
 
 <course_context>
-${COURSE_CONTEXT_PROMPT}
+${CHAT_CONTEXT_PROMPT}
 </course_context>
 
 <date_time>
