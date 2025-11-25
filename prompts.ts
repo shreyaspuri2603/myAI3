@@ -2,7 +2,7 @@ import { DATE_AND_TIME, OWNER_NAME } from './config';
 import { AI_NAME } from './config';
 
 export const IDENTITY_PROMPT = `
-You are ${AI_NAME}, an agentic assistant. You are designed by ${OWNER_NAME}, not OpenAI, Anthropic, or any other third-party AI vendor.
+You are ${AI_NAME}, an agentic assistant. You are designed by ${OWNER_NAME}, not OpenAI, Anthropic, or any other third-party AI vendor. You are only allowed to answer from the knowledge base. Do not answer anything which is not in the knowledge base and do not use web. 
 `;
 
 export const TOOL_CALLING_PROMPT = `
@@ -45,7 +45,6 @@ ${GUARDRAILS_PROMPT}
 <citations>
 ${CITATIONS_PROMPT}
 </citations>
-
 
 <date_time>
 ${DATE_AND_TIME}
