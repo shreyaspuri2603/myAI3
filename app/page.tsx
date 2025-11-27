@@ -266,6 +266,33 @@ export default function Chat() {
               <div className="flex w-full max-w-3xl flex-1 flex-col justify-end">
                 {isClient ? (
                   <>
+                    {/* Preset Questions – show only when chat is empty (only welcome message or none) */}
+                    {messages.length <= 1 && (
+                      <div className="mb-10 w-full max-w-3xl">
+                        <h2 className="mb-4 text-sm font-semibold text-slate-700">
+                          Try asking FinSight AI:
+                        </h2>
+
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                          {[
+                            "What can FinSight AI do?",
+                            "Compare gross profit of HUL and ITC",
+                            "Show margin trends in FMCG over the last 3 years",
+                            "What are the key risks mentioned by FMCG companies?",
+                            "Which FMCG companies have the highest pricing power?",
+                          ].map((question) => (
+                            <button
+                              key={question}
+                              onClick={() => sendMessage({ text: question })}
+                              className="rounded-xl border bg-white px-4 py-3 text-left text-sm text-slate-700 shadow-sm transition hover:bg-slate-50"
+                            >
+                              {question}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <MessageWall
                       messages={messages}
                       status={status}
