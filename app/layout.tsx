@@ -1,6 +1,6 @@
-// app/layout.tsx
 import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
+
 import "./globals.css";
 
 const inter = Inter({
@@ -14,9 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FinSight AI – FMCG Research Copilot",
-  description:
-    "FinSight AI is a financial research copilot for FMCG analysts, built by Shreyas & Kanupriya. It reads annual reports and helps compare metrics like gross profit, margins, and growth across NIFTY FMCG companies.",
+  title: "MyAI3",
+  description: "MyAI3",
 };
 
 export default function RootLayout({
@@ -25,9 +24,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <body
-        className={`${inter.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+        className={`${inter.variable} ${geistMono.variable} antialiased`}
       >
         {children}
       </body>
