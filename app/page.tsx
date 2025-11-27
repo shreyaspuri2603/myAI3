@@ -294,11 +294,12 @@ export default function Chat() {
                     )}
 
                     <MessageWall
-                      messages={messages}
-                      status={status}
-                      durations={durations}
-                      onDurationChange={handleDurationChange}
-                    />
+  messages={messages}
+  status={status}
+  durations={durations}
+  onDurationChange={handleDurationChange}
+  onFollowupClick={(text) => sendMessage({ text })}
+/>
 
                     {status === "submitted" && (
                       <div className="mt-2 flex w-full justify-start">
