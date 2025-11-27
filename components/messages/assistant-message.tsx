@@ -31,74 +31,65 @@ export function AssistantMessage({
           const durationKey = `${message.id}-${i}`;
           const duration = durations?.[durationKey];
 
+          // ---------- TEXT PART ----------
           if (part.type === "text") {
-            const text = String(part.text ?? "");
+            const raw = String(part.text ?? "");
+            const lines = raw.split("\n").filter((l) => l.trim().length > 0);
 
-            // ----- FOLLOW-UP PARSING -----
-            // Handle headings like:
-            // "Suggested Follow-up Questions"
-            // "Relevant follow-up questions"
-            // "You may also want to explore:"
-            const LOWER = text.toLowerCase();
+            // Look for a line that is the follow-up heading
+            const headerIndex = lines.findIndex((line) =>
+              line.toLowerCase().startsWith("follow-up questions")
+            );
 
-            const hasFollowups = LOWER.includes("follow-up questions") ||
-              LOWER.includes("you may also want to explore");
-
-            if (!hasFollowups) {
-              // No follow-up block -> normal rendering
+            // If no heading, render normally
+            if (headerIndex === -1) {
               return (
-                <Response key={`${message.id}-${i}`}>{text}</Response>
+                <Response key={`${message.id}-${i}`}>{raw}</Response>
               );
             }
 
-            // Split answer vs follow-up block
-            const SPLIT_REGEX =
-              /(suggested|relevant)\s+follow[- ]up questions:?|you may also want to explore:?/i;
+            // Everything before the heading (usually already rendered in another part,
+            // but we keep it for safety)
+            const preText = lines.slice(0, headerIndex).join("\n");
+            const heading = lines[headerIndex];
+            const questionLines = lines.slice(headerIndex + 1);
 
-            const [mainRaw, followRawWithHeader] = text.split(SPLIT_REGEX);
-            const mainAnswer = (mainRaw ?? "").trim();
-
-            // Everything after the heading line
-            const followRaw = text
-              .slice(text.search(SPLIT_REGEX))
-              .replace(SPLIT_REGEX, "")
-              .trim();
-
-            const followupQuestions = followRaw
-              .split("\n")
+            const questions = questionLines
               .map((line) => line.replace(/^\s*\d+\.\s*/, "").trim())
-              .filter(Boolean);
+              .filter((q) => q.length > 0);
 
             return (
               <div
                 key={`${message.id}-${i}`}
                 className="flex flex-col gap-3"
               >
-                {mainAnswer && <Response>{mainAnswer}</Response>}
+                {preText && <Response>{preText}</Response>}
 
-                {followupQuestions.length > 0 && (
-                  <div className="mt-1 space-y-2">
-                    <p className="text-sm font-semibold text-slate-700">
-                      Suggested follow-up questions:
-                    </p>
-                    {followupQuestions.map((q, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() =>
-                          onFollowupClick && onFollowupClick(q)
-                        }
-                        className="block w-full rounded-xl border bg-white px-4 py-2 text-left text-sm text-slate-700 shadow-sm transition hover:bg-slate-50"
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {/* Heading */}
+                <p className="font-semibold text-slate-800">
+                  {heading.replace(/:\s*$/, ":")}
+                </p>
+
+                {/* Make each question itself clickable */}
+                <div className="space-y-1">
+                  {questions.map((q, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() =>
+                        onFollowupClick && onFollowupClick(q)
+                      }
+                      className="block w-full text-left text-sm text-slate-900 hover:underline cursor-pointer"
+                    >
+                      {`${idx + 1}. ${q}`}
+                    </button>
+                  ))}
+                </div>
               </div>
             );
           }
 
+          // ---------- REASONING ----------
           if (part.type === "reasoning") {
             return (
               <ReasoningPart
@@ -115,6 +106,7 @@ export function AssistantMessage({
             );
           }
 
+          // ---------- TOOL CALL / RESULT ----------
           if (
             part.type.startsWith("tool-") ||
             part.type === "dynamic-tool"
