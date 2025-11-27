@@ -34,25 +34,37 @@ export function AssistantMessage({
           if (part.type === "text") {
             const text = String(part.text ?? "");
 
-            // Look for a "Relevant follow-up questions:" section in this text part
-            const headerRegex = /Relevant follow-up questions:\s*/i;
-            const headerIndex = text.search(headerRegex);
+            // ----- FOLLOW-UP PARSING -----
+            // Handle headings like:
+            // "Suggested Follow-up Questions"
+            // "Relevant follow-up questions"
+            // "You may also want to explore:"
+            const LOWER = text.toLowerCase();
 
-            if (headerIndex === -1) {
-              // No follow-ups → render as usual
+            const hasFollowups = LOWER.includes("follow-up questions") ||
+              LOWER.includes("you may also want to explore");
+
+            if (!hasFollowups) {
+              // No follow-up block -> normal rendering
               return (
                 <Response key={`${message.id}-${i}`}>{text}</Response>
               );
             }
 
-            // Split into main answer + follow-up section
-            const mainAnswer = text.slice(0, headerIndex).trim();
-            const followupRaw = text
-              .slice(headerIndex)
-              .replace(headerRegex, "")
+            // Split answer vs follow-up block
+            const SPLIT_REGEX =
+              /(suggested|relevant)\s+follow[- ]up questions:?|you may also want to explore:?/i;
+
+            const [mainRaw, followRawWithHeader] = text.split(SPLIT_REGEX);
+            const mainAnswer = (mainRaw ?? "").trim();
+
+            // Everything after the heading line
+            const followRaw = text
+              .slice(text.search(SPLIT_REGEX))
+              .replace(SPLIT_REGEX, "")
               .trim();
 
-            const followupQuestions = followupRaw
+            const followupQuestions = followRaw
               .split("\n")
               .map((line) => line.replace(/^\s*\d+\.\s*/, "").trim())
               .filter(Boolean);
@@ -67,9 +79,8 @@ export function AssistantMessage({
                 {followupQuestions.length > 0 && (
                   <div className="mt-1 space-y-2">
                     <p className="text-sm font-semibold text-slate-700">
-                      Relevant follow-up questions:
+                      Suggested follow-up questions:
                     </p>
-
                     {followupQuestions.map((q, idx) => (
                       <button
                         key={idx}
@@ -86,7 +97,9 @@ export function AssistantMessage({
                 )}
               </div>
             );
-          } else if (part.type === "reasoning") {
+          }
+
+          if (part.type === "reasoning") {
             return (
               <ReasoningPart
                 key={`${message.id}-${i}`}
@@ -100,7 +113,9 @@ export function AssistantMessage({
                 }
               />
             );
-          } else if (
+          }
+
+          if (
             part.type.startsWith("tool-") ||
             part.type === "dynamic-tool"
           ) {
