@@ -6,23 +6,18 @@ import { toast } from "sonner";
 import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useChat } from "@ai-sdk/react";
-import { ArrowUp, Eraser, Loader2, Plus, PlusIcon, Square } from "lucide-react";
+import { ArrowUp, Loader2, Plus, Square } from "lucide-react";
 import { MessageWall } from "@/components/messages/message-wall";
-import { ChatHeader } from "@/app/parts/chat-header";
-import { ChatHeaderBlock } from "@/app/parts/chat-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UIMessage } from "ai";
 import { useEffect, useState, useRef } from "react";
 import { AI_NAME, CLEAR_CHAT_TEXT, OWNER_NAME, WELCOME_MESSAGE } from "@/config";
 import Image from "next/image";
 import Link from "next/link";
+import { VoiceButton } from "@/components/voice-button";
 
 const formSchema = z.object({
   message: z
@@ -31,15 +26,17 @@ const formSchema = z.object({
     .max(2000, "Message must be at most 2000 characters."),
 });
 
-const STORAGE_KEY = 'chat-messages';
+const STORAGE_KEY = "chat-messages";
 
 type StorageData = {
   messages: UIMessage[];
   durations: Record<string, number>;
 };
 
-const loadMessagesFromStorage = (): { messages: UIMessage[]; durations: Record<string, number> } => {
-  if (typeof window === 'undefined') return { messages: [], durations: {} };
+const loadMessagesFromStorage = (): StorageData => {
+  if (typeof window === "undefined")
+    return { messages: [], durations: {} };
+
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return { messages: [], durations: {} };
@@ -50,32 +47,39 @@ const loadMessagesFromStorage = (): { messages: UIMessage[]; durations: Record<s
       durations: parsed.durations || {},
     };
   } catch (error) {
-    console.error('Failed to load messages from localStorage:', error);
+    console.error("Failed to load messages from localStorage:", error);
     return { messages: [], durations: {} };
   }
 };
 
-const saveMessagesToStorage = (messages: UIMessage[], durations: Record<string, number>) => {
-  if (typeof window === 'undefined') return;
+const saveMessagesToStorage = (
+  messages: UIMessage[],
+  durations: Record<string, number>,
+) => {
+  if (typeof window === "undefined") return;
   try {
     const data: StorageData = { messages, durations };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
-    console.error('Failed to save messages to localStorage:', error);
+    console.error("Failed to save messages to localStorage:", error);
   }
 };
 
-export default function Chat() {
+export default function ChatPage() {
   const [isClient, setIsClient] = useState(false);
   const [durations, setDurations] = useState<Record<string, number>>({});
   const welcomeMessageShownRef = useRef<boolean>(false);
 
-  const stored = typeof window !== 'undefined' ? loadMessagesFromStorage() : { messages: [], durations: {} };
+  const stored =
+    typeof window !== "undefined"
+      ? loadMessagesFromStorage()
+      : { messages: [], durations: {} };
   const [initialMessages] = useState<UIMessage[]>(stored.messages);
 
-  const { messages, sendMessage, status, stop, setMessages } = useChat({
-    messages: initialMessages,
-  });
+  const { messages, sendMessage, status, stop, setMessages, input, setInput } =
+    useChat({
+      messages: initialMessages,
+    });
 
   useEffect(() => {
     setIsClient(true);
@@ -97,8 +101,13 @@ export default function Chat() {
     });
   };
 
+  // show welcome message only once
   useEffect(() => {
-    if (isClient && initialMessages.length === 0 && !welcomeMessageShownRef.current) {
+    if (
+      isClient &&
+      initialMessages.length === 0 &&
+      !welcomeMessageShownRef.current
+    ) {
       const welcomeMessage: UIMessage = {
         id: `welcome-${Date.now()}`,
         role: "assistant",
@@ -137,59 +146,101 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex h-screen items-center justify-center font-sans dark:bg-black">
-      <main className="w-full dark:bg-black h-screen relative">
-        <div className="fixed top-0 left-0 right-0 z-50 bg-linear-to-b from-background via-background/50 to-transparent dark:bg-black overflow-visible pb-16">
-          <div className="relative overflow-visible">
-            <ChatHeader>
-              <ChatHeaderBlock />
-              <ChatHeaderBlock className="justify-center items-center">
-                <Avatar
-                  className="size-8 ring-1 ring-primary"
-                >
-                  <AvatarImage src="/logo.png" />
-                  <AvatarFallback>
-                    <Image src="/logo.png" alt="Logo" width={36} height={36} />
-                  </AvatarFallback>
-                </Avatar>
-                <p className="tracking-tight">Chat with {AI_NAME}</p>
-              </ChatHeaderBlock>
-              <ChatHeaderBlock className="justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="cursor-pointer"
-                  onClick={clearChat}
-                >
-                  <Plus className="size-4" />
-                  {CLEAR_CHAT_TEXT}
-                </Button>
-              </ChatHeaderBlock>
-            </ChatHeader>
+    <div className="chat-shell font-sans">
+      <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-4 px-4 py-4 md:py-6">
+        {/* Top nav */}
+        <header className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-3 shadow-sm backdrop-blur">
+          <div className="flex items-center gap-3">
+            <Avatar className="size-9 ring-1 ring-emerald-500/70">
+              <AvatarImage src="/logo.png" />
+              <AvatarFallback>
+                <Image
+                  src="/logo.png"
+                  alt="Logo"
+                  width={36}
+                  height={36}
+                />
+              </AvatarFallback>
+            </Avatar>
+            <div className="space-y-0.5">
+              <h1 className="text-sm font-semibold tracking-tight text-slate-50">
+                {AI_NAME}
+              </h1>
+              <p className="text-xs text-slate-400">
+                FMCG Research Copilot for Financial Analysts
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="h-screen overflow-y-auto px-5 py-4 w-full pt-[88px] pb-[150px]">
-          <div className="flex flex-col items-center justify-end min-h-full">
-            {isClient ? (
-              <>
-                <MessageWall messages={messages} status={status} durations={durations} onDurationChange={handleDurationChange} />
-                {status === "submitted" && (
-                  <div className="flex justify-start max-w-3xl w-full">
-                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="flex justify-center max-w-2xl w-full">
-                <Loader2 className="size-4 animate-spin text-muted-foreground" />
+          <div className="flex items-center gap-2">
+            <span className="hidden rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-300 md:inline">
+              FMCG • NIFTY • MVP
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-slate-600 bg-slate-900/60 text-xs text-slate-100 hover:border-emerald-500 hover:bg-slate-900"
+              onClick={clearChat}
+            >
+              <Plus className="mr-1 size-3.5" />
+              {CLEAR_CHAT_TEXT}
+            </Button>
+          </div>
+        </header>
+
+        {/* Main content: sidebar + chat */}
+        <section className="grid flex-1 gap-4 md:grid-cols-[260px_minmax(0,1fr)]">
+          {/* Sidebar with analyst tips */}
+          <aside className="hidden flex-col gap-3 rounded-xl border border-slate-700 bg-slate-900/70 p-4 text-xs text-slate-200 md:flex">
+            <h2 className="mb-1 text-sm font-semibold text-slate-50">
+              How analysts use {AI_NAME}
+            </h2>
+            <ul className="space-y-1">
+              <li>• Compare gross profit and margins across FMCG names.</li>
+              <li>• Track YoY changes vs. previous annual reports.</li>
+              <li>• Ask for segment breakdowns, RM / packaging inflation, A&amp;P.</li>
+              <li>• Summarise management commentary on risks and outlook.</li>
+            </ul>
+            <div className="mt-3 rounded-lg border border-slate-700 bg-slate-900/80 p-3">
+              <p className="text-[11px] text-slate-400">
+                FinSight AI searches embedded FMCG reports first and uses web
+                data only when internal documents are insufficient. All answers
+                should be grounded in filings and properly cited.
+              </p>
+            </div>
+          </aside>
+
+          {/* Chat panel */}
+          <section className="flex min-h-[420px] flex-col rounded-xl border border-slate-700 bg-slate-900/80 p-3 shadow-sm backdrop-blur">
+            {/* Messages area */}
+            <div className="relative flex-1 overflow-hidden">
+              <div className="h-full overflow-y-auto px-1 pb-4 pt-1">
+                <div className="flex min-h-[260px] flex-col items-center justify-end">
+                  {isClient ? (
+                    <>
+                      <MessageWall
+                        messages={messages}
+                        status={status}
+                        durations={durations}
+                        onDurationChange={handleDurationChange}
+                      />
+                      {status === "submitted" && (
+                        <div className="mt-2 flex w-full max-w-3xl justify-start">
+                          <Loader2 className="size-4 animate-spin text-slate-400" />
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex w-full max-w-2xl justify-center">
+                      <Loader2 className="size-4 animate-spin text-slate-400" />
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
-        </div>
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-linear-to-t from-background via-background/50 to-transparent dark:bg-black overflow-visible pt-13">
-          <div className="w-full px-5 pt-5 pb-1 items-center flex justify-center relative overflow-visible">
-            <div className="message-fade-overlay" />
-            <div className="max-w-3xl w-full">
+              <div className="message-fade-overlay" />
+            </div>
+
+            {/* Input row */}
+            <div className="mt-3 border-t border-slate-700 pt-3">
               <form id="chat-form" onSubmit={form.handleSubmit(onSubmit)}>
                 <FieldGroup>
                   <Controller
@@ -197,46 +248,67 @@ export default function Chat() {
                     control={form.control}
                     render={({ field, fieldState }) => (
                       <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="chat-form-message" className="sr-only">
+                        <FieldLabel
+                          htmlFor="chat-form-message"
+                          className="sr-only"
+                        >
                           Message
                         </FieldLabel>
-                        <div className="relative h-13">
-                          <Input
-                            {...field}
-                            id="chat-form-message"
-                            className="h-15 pr-15 pl-5 bg-card rounded-[20px]"
-                            placeholder="Type your message here..."
-                            disabled={status === "streaming"}
-                            aria-invalid={fieldState.invalid}
-                            autoComplete="off"
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                form.handleSubmit(onSubmit)();
-                              }
-                            }}
-                          />
-                          {(status == "ready" || status == "error") && (
-                            <Button
-                              className="absolute right-3 top-3 rounded-full"
-                              type="submit"
-                              disabled={!field.value.trim()}
-                              size="icon"
-                            >
-                              <ArrowUp className="size-4" />
-                            </Button>
-                          )}
-                          {(status == "streaming" || status == "submitted") && (
-                            <Button
-                              className="absolute right-2 top-2 rounded-full"
-                              size="icon"
-                              onClick={() => {
-                                stop();
+                        <div className="flex items-end gap-2">
+                          <div className="relative flex-1">
+                            <Input
+                              {...field}
+                              id="chat-form-message"
+                              className="h-12 w-full rounded-2xl border-slate-700 bg-slate-950/60 pr-24 pl-4 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:ring-emerald-500"
+                              placeholder="Ask about gross profit, margins, volume growth, risks..."
+                              disabled={status === "streaming"}
+                              aria-invalid={fieldState.invalid}
+                              autoComplete="off"
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault();
+                                  form.handleSubmit(onSubmit)();
+                                }
                               }}
-                            >
-                              <Square className="size-4" />
-                            </Button>
-                          )}
+                            />
+                            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-2">
+                              {status === "streaming" ||
+                              status === "submitted" ? (
+                                <div className="pointer-events-auto">
+                                  <Button
+                                    className="h-8 w-8 rounded-full border border-slate-600 bg-slate-900/80 text-slate-100 hover:border-emerald-500"
+                                    size="icon"
+                                    type="button"
+                                    onClick={() => {
+                                      stop();
+                                    }}
+                                  >
+                                    <Square className="size-3.5" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 pointer-events-auto">
+                                  <VoiceButton
+                                    onTranscript={(t) => {
+                                      const nextValue = field.value
+                                        ? `${field.value} ${t}`
+                                        : t;
+                                      field.onChange(nextValue);
+                                      setInput(nextValue);
+                                    }}
+                                  />
+                                  <Button
+                                    className="h-8 w-8 rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+                                    type="submit"
+                                    disabled={!field.value.trim()}
+                                    size="icon"
+                                  >
+                                    <ArrowUp className="size-4" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </Field>
                     )}
@@ -244,12 +316,25 @@ export default function Chat() {
                 </FieldGroup>
               </form>
             </div>
-          </div>
-          <div className="w-full px-5 py-3 items-center flex justify-center text-xs text-muted-foreground">
-            © {new Date().getFullYear()} {OWNER_NAME}&nbsp;<Link href="/terms" className="underline">Terms of Use</Link>&nbsp;Powered by&nbsp;<Link href="https://ringel.ai/" className="underline">Ringel.AI</Link>
-          </div>
-        </div>
+          </section>
+        </section>
+
+        {/* Footer */}
+        <footer className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+          <p>
+            © {new Date().getFullYear()} {OWNER_NAME}. All rights reserved.
+          </p>
+          <p className="space-x-1">
+            <Link href="/terms" className="underline">
+              Terms of Use
+            </Link>
+            <span>·</span>
+            <Link href="https://ringel.ai/" className="underline">
+              Powered by Ringel.AI
+            </Link>
+          </p>
+        </footer>
       </main>
-    </div >
+    </div>
   );
 }
